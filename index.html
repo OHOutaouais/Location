@@ -120,7 +120,8 @@ html += `
     <strong>Téléphone :</strong> ${r.tel}<br>
     <strong>Email :</strong> 
     <a href="mailto:${r.email}">${r.email}</a><br>
-    <strong>Code :</strong> ${getCodeSIGLS(r.agent)}
+
+    ${showCode ? `<strong>Code :</strong> ${getCodeSIGLS(r.agent)}` : ""}
   </div>
       `;
     });
