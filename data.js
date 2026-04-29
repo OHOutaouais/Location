@@ -167,7 +167,7 @@ blocs.forEach(bloc => {
     }
   });
 });
-function getCodeSIGLS(agent) {
+function getCode(agent) {
   switch (agent) {
     case "Molka Nouri":
       return "molnou4";
