@@ -1,8 +1,8 @@
 {
-  "name": "OH Outaouais - Agents de location",
-  "short_name": "OH Outaouais",
+  "name": "Trouver votre agent de location",
+  "short_name": "Agent de location",
   "description": "Trouvez votre agent(e) de location rapidement",
-  "start_url": "/",
+  "start_url": "/Location/",
   "display": "standalone",
   "background_color": "#eaeaea",
   "theme_color": "#0077cc",
