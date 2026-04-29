@@ -78,14 +78,22 @@
     <h2>Trouvez votre agent(e) de location / Find your rental agent</h2><br>
     <h3>Entrez votre nom de rue ou votre numéro civique / Enter your street name or civic number</h3>
 
-    <!-- Bouton installer - Android -->
-    <button id="btnInstaller" onclick="installerApp()" style="display:none; margin-top:20px; padding:12px 24px; background:#0077cc; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer;">
-      📲 Ajouter à l'écran d'accueil
-    </button>
+    <!-- Boutons installer -->
+    <div style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <button id="btnAndroid" onclick="installerApp()" style="display:none; padding:12px 20px; background:#0077cc; color:white; border:none; border-radius:6px; font-size:15px; cursor:pointer;">
+        🤖 Ajouter (Android)
+      </button>
+      <button id="btnIOS" onclick="togglePopupIOS()" style="display:none; padding:12px 20px; background:#555; color:white; border:none; border-radius:6px; font-size:15px; cursor:pointer;">
+        🍎 Ajouter (iPhone)
+      </button>
+    </div>
 
-    <!-- Message iOS -->
-    <div id="msgIOS" style="display:none; margin-top:20px; padding:12px; background:#e8f4fd; border-radius:6px; font-size:15px; color:#333;">
-      📲 Pour ajouter à l'écran d'accueil : appuyez sur <strong>⎙ Partager</strong> puis <strong>« Sur l'écran d'accueil »</strong>
+    <!-- Popup instructions iOS -->
+    <div id="popupIOS" style="display:none; margin-top:15px; padding:15px; background:#e8f4fd; border-radius:8px; font-size:15px; color:#333; text-align:left; line-height:1.8;">
+      <strong>Comment ajouter sur iPhone :</strong><br>
+      1. Appuyez sur <strong>⎙</strong> (bouton Partager en bas de Safari)<br>
+      2. Faites défiler et appuyez sur <strong>« Sur l'écran d'accueil »</strong><br>
+      3. Appuyez sur <strong>« Ajouter »</strong> en haut à droite
     </div>
 
     <input type="text" id="search" placeholder="Ex: Maloney, Gouin..." onkeyup="chercher()">
@@ -146,27 +154,27 @@ function chercher() {
   document.getElementById("resultat").innerHTML = html;
 }
 
-// 📲 PWA - Bouton installer
+// 📲 PWA - Boutons installer
 let deferredPrompt = null;
 
-// Détection iOS
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = window.navigator.standalone === true;
+const isAndroid = /android/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
+// Afficher bouton iOS si pas déjà installé
 if (isIOS && !isStandalone) {
-  document.getElementById('msgIOS').style.display = 'block';
+  document.getElementById('btnIOS').style.display = 'inline-block';
 }
 
 // Android : capture l'événement beforeinstallprompt
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
-  document.getElementById('btnInstaller').style.display = 'inline-block';
+  document.getElementById('btnAndroid').style.display = 'inline-block';
 });
 
-// Cacher le bouton une fois installé
 window.addEventListener('appinstalled', () => {
-  document.getElementById('btnInstaller').style.display = 'none';
+  document.getElementById('btnAndroid').style.display = 'none';
   deferredPrompt = null;
 });
 
@@ -175,9 +183,14 @@ function installerApp() {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(() => {
       deferredPrompt = null;
-      document.getElementById('btnInstaller').style.display = 'none';
+      document.getElementById('btnAndroid').style.display = 'none';
     });
   }
+}
+
+function togglePopupIOS() {
+  const popup = document.getElementById('popupIOS');
+  popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
 }
 
 // 📲 Enregistrement du Service Worker (PWA)
