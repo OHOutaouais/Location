@@ -188,3 +188,4 @@ function getCodeSIGLS(agent) {
       return "";
   }
 }
+const showCode = new URLSearchParams(window.location.search).get("code") === "1";
