@@ -139,7 +139,7 @@ function chercher() {
 // 📲 Enregistrement du Service Worker (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    navigator.serviceWorker.register('/Location/sw.js').catch(() => {
       // Silencieux si ça échoue (ex: ouvert en local sans serveur)
     });
   });
