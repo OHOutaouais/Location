@@ -78,6 +78,16 @@
     <h2>Trouvez votre agent(e) de location / Find your rental agent</h2><br>
     <h3>Entrez votre nom de rue ou votre numéro civique / Enter your street name or civic number</h3>
 
+    <!-- Bouton installer - Android -->
+    <button id="btnInstaller" onclick="installerApp()" style="display:none; margin-top:20px; padding:12px 24px; background:#0077cc; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer;">
+      📲 Ajouter à l'écran d'accueil
+    </button>
+
+    <!-- Message iOS -->
+    <div id="msgIOS" style="display:none; margin-top:20px; padding:12px; background:#e8f4fd; border-radius:6px; font-size:15px; color:#333;">
+      📲 Pour ajouter à l'écran d'accueil : appuyez sur <strong>⎙ Partager</strong> puis <strong>« Sur l'écran d'accueil »</strong>
+    </div>
+
     <input type="text" id="search" placeholder="Ex: Maloney, Gouin..." onkeyup="chercher()">
 
     <div id="resultat"></div>
@@ -134,6 +144,40 @@ function chercher() {
   }
 
   document.getElementById("resultat").innerHTML = html;
+}
+
+// 📲 PWA - Bouton installer
+let deferredPrompt = null;
+
+// Détection iOS
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone === true;
+
+if (isIOS && !isStandalone) {
+  document.getElementById('msgIOS').style.display = 'block';
+}
+
+// Android : capture l'événement beforeinstallprompt
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('btnInstaller').style.display = 'inline-block';
+});
+
+// Cacher le bouton une fois installé
+window.addEventListener('appinstalled', () => {
+  document.getElementById('btnInstaller').style.display = 'none';
+  deferredPrompt = null;
+});
+
+function installerApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('btnInstaller').style.display = 'none';
+    });
+  }
 }
 
 // 📲 Enregistrement du Service Worker (PWA)
