@@ -121,7 +121,7 @@ html += `
     <strong>Email :</strong> 
     <a href="mailto:${r.email}">${r.email}</a><br>
 
-    ${showCode ? `<strong>Code :</strong> ${getCodeSIGLS(r.agent)}` : ""}
+    ${showCode ? `<strong>Code :</strong> ${getCode(r.agent)}` : ""}
   </div>
       `;
     });
