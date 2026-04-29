@@ -31,13 +31,19 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch : cache d'abord, réseau en fallback
+// Fetch : réseau d'abord, cache en fallback si hors ligne
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      return cached || fetch(event.request).catch(() => {
-        // Si hors ligne et pas en cache, rien à faire
-      });
-    })
+    fetch(event.request)
+      .then(response => {
+        // Mettre à jour le cache avec la nouvelle version
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => {
+        // Hors ligne : retourner la version en cache
+        return caches.match(event.request);
+      })
   );
 });
