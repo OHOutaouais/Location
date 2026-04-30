@@ -199,6 +199,8 @@ function chercher() {
 let deferredPrompt = null;
 
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isAndroid = /android/i.test(navigator.userAgent);
+const isMobile = isIOS || isAndroid;
 const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
 if (!isStandalone) {
@@ -207,11 +209,12 @@ if (!isStandalone) {
       document.getElementById('btnInstaller').style.display = 'inline-block';
       document.getElementById('btnInstaller').onclick = togglePopupIOS;
     }
-  } else {
-    // Visiteur normal → toujours afficher les deux icônes
+  } else if (isMobile) {
+    // Mobile seulement → afficher les deux icônes
     document.getElementById('icIOS').style.display = 'inline-block';
     document.getElementById('icAndroid').style.display = 'inline-block';
   }
+  // Ordi → rien
 }
 
 window.addEventListener('beforeinstallprompt', e => {
