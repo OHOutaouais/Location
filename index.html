@@ -223,7 +223,7 @@ window.addEventListener('beforeinstallprompt', e => {
   if (!isStandalone) {
     if (showCode) {
       document.getElementById('btnInstaller').style.display = 'inline-block';
-    } else {
+    } else if (isMobile) {
       document.getElementById('icAndroid').style.display = 'inline-block';
     }
   }
