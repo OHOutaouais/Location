@@ -67,6 +67,55 @@
       color: #0077cc;
       text-decoration: none;
     }
+
+    #zone-installer {
+      position: fixed;
+      top: 12px;
+      right: 15px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .icone-install {
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+
+    .icone-install:hover { opacity: 1; }
+
+    #btnInstaller {
+      display: none;
+      padding: 7px 14px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    #popupIOS {
+      display: none;
+      position: fixed;
+      top: 58px;
+      right: 15px;
+      width: 260px;
+      padding: 15px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      font-size: 14px;
+      color: #333;
+      text-align: left;
+      line-height: 1.8;
+      z-index: 998;
+    }
   </style>
 </head>
 
@@ -78,23 +127,22 @@
     <h2>Trouvez votre agent(e) de location / Find your rental agent</h2><br>
     <h3>Entrez votre nom de rue ou votre numéro civique / Enter your street name or civic number</h3>
 
-    <!-- Boutons installer -->
-    <div style="margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <button id="btnAndroid" onclick="installerApp()" style="display:none; padding:12px 20px; background:#0077cc; color:white; border:none; border-radius:6px; font-size:15px; cursor:pointer;">
-        🤖 Ajouter (Android)
-      </button>
-      <button id="btnIOS" onclick="togglePopupIOS()" style="display:none; padding:12px 20px; background:#555; color:white; border:none; border-radius:6px; font-size:15px; cursor:pointer;">
-        🍎 Ajouter (iPhone)
-      </button>
-    </div>
+<!-- Zone installer fixe haut droite -->
+<div id="zone-installer">
+  <!-- Icônes Android/iPhone (visiteur normal) -->
+  <img id="icAndroid" src="android.png" alt="Android" class="icone-install" style="display:none" onclick="installerApp()" title="Ajouter sur Android">
+  <img id="icIOS" src="iphone.png" alt="iPhone" class="icone-install" style="display:none" onclick="togglePopupIOS()" title="Ajouter sur iPhone">
+  <!-- Bouton Installer (code=1 seulement) -->
+  <button id="btnInstaller" onclick="installerApp()">📲 Installer</button>
+</div>
 
-    <!-- Popup instructions iOS -->
-    <div id="popupIOS" style="display:none; margin-top:15px; padding:15px; background:#e8f4fd; border-radius:8px; font-size:15px; color:#333; text-align:left; line-height:1.8;">
-      <strong>Comment ajouter sur iPhone :</strong><br>
-      1. Appuyez sur <strong>⎙</strong> (bouton Partager en bas de Safari)<br>
-      2. Faites défiler et appuyez sur <strong>« Sur l'écran d'accueil »</strong><br>
-      3. Appuyez sur <strong>« Ajouter »</strong> en haut à droite
-    </div>
+<!-- Popup instructions iOS -->
+<div id="popupIOS">
+  <strong>Ajouter sur iPhone :</strong><br>
+  1. Appuyez sur <strong>⎙</strong> (Partager, en bas de Safari)<br>
+  2. Faites défiler → <strong>« Sur l'écran d'accueil »</strong><br>
+  3. Appuyez sur <strong>« Ajouter »</strong>
+</div>
 
     <input type="text" id="search" placeholder="Ex: Maloney, Gouin..." onkeyup="chercher()">
 
@@ -154,28 +202,47 @@ function chercher() {
   document.getElementById("resultat").innerHTML = html;
 }
 
-// 📲 PWA - Boutons installer
+// 📲 PWA - Installer
 let deferredPrompt = null;
 
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isAndroid = /android/i.test(navigator.userAgent);
 const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
-// Afficher bouton iOS si pas déjà installé
-if (isIOS && !isStandalone) {
-  document.getElementById('btnIOS').style.display = 'inline-block';
+if (!isStandalone) {
+  if (showCode) {
+    // code=1 → bouton "Installer" texte, pas d'icônes
+    // Le bouton s'affiche seulement si le prompt est dispo (Android/Chrome)
+    // Sur iOS avec code=1, on affiche quand même le bouton qui ouvrira le popup
+    if (isIOS) {
+      document.getElementById('btnInstaller').style.display = 'inline-block';
+      document.getElementById('btnInstaller').onclick = togglePopupIOS;
+    }
+    // Android : affiché via beforeinstallprompt ci-dessous
+  } else {
+    // Visiteur normal → icônes
+    if (isIOS) {
+      document.getElementById('icIOS').style.display = 'inline-block';
+    }
+    // Android : affiché via beforeinstallprompt ci-dessous
+  }
 }
 
-// Android : capture l'événement beforeinstallprompt
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
-  document.getElementById('btnAndroid').style.display = 'inline-block';
+  if (!isStandalone) {
+    if (showCode) {
+      document.getElementById('btnInstaller').style.display = 'inline-block';
+    } else {
+      document.getElementById('icAndroid').style.display = 'inline-block';
+    }
+  }
 });
 
 window.addEventListener('appinstalled', () => {
-  document.getElementById('btnAndroid').style.display = 'none';
   deferredPrompt = null;
+  document.getElementById('icAndroid').style.display = 'none';
+  document.getElementById('btnInstaller').style.display = 'none';
 });
 
 function installerApp() {
@@ -183,7 +250,8 @@ function installerApp() {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(() => {
       deferredPrompt = null;
-      document.getElementById('btnAndroid').style.display = 'none';
+      document.getElementById('icAndroid').style.display = 'none';
+      document.getElementById('btnInstaller').style.display = 'none';
     });
   }
 }
