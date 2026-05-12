@@ -8,6 +8,7 @@ Adresses (numéros de rue) :
 • Du Conservatoire (55, 59, 63, 67, 71, 75, 79, 83, 87, 91, 95, 99, 103, 107)  
 • Liverpool (151, 155, 159, 163, 167, 171, 175, 179, 183, 187, 191, 195, 199, 203, 207) 
 • Mance (20) 
+• Mance (maisonnettes)
 • Sacré-Cœur (40, 50) 
  
 Agente de location :         Madame Karine Bertrand 
@@ -113,7 +114,6 @@ Adresses (numéros de rue) :
 • Hanson (54) 
 • Leduc (152) 
 • Lévesque (2, 4) 
-• Mance (maisonnettes) 
 • Morin (16) 
 • Prévost (27, 29) 
 • Sainte-Bernadette (10) 
