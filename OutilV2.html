@@ -1139,20 +1139,69 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
   analyzeBtn.addEventListener('click', runAnalysis);
 
   // ---------- storage: unanswered log ----------
+  // window.storage only exists inside Claude.ai's artifact preview. Once the
+  // file is hosted elsewhere (e.g. GitHub Pages) it's undefined, so we fall
+  // back to the browser's own localStorage — same behaviour, just scoped to
+  // this device/browser instead of being shared across every visitor.
   var LOG_KEY = 'unanswered_queries';
+  var LS_PREFIX = 'oho_diag_';
 
-  function logUnanswered(text){
-    readLog().then(function(list){
-      list.unshift({ text: text, date: new Date().toISOString() });
-      if (list.length > 500) list = list.slice(0, 500);
-      window.storage.set(LOG_KEY, JSON.stringify(list), true).catch(function(err){
-        console.error('Erreur d\'enregistrement', err);
-      }).then(renderHistoryTab);
+  // >>> URL de ton application web Google Apps Script (se termine par /exec)
+  var GAS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzDGFUMqiox39DUtLKWgv1DgSOSlISfIbMZW1PKNv6qYoHdGXh-mt4z6b4ZgHhxsdF2/exec';
+
+  function hasClaudeStorage(){
+    return typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+  }
+
+  function storageGet(key){
+    if (hasClaudeStorage()){
+      return window.storage.get(key, true).catch(function(){ return null; });
+    }
+    return Promise.resolve().then(function(){
+      try {
+        var raw = localStorage.getItem(LS_PREFIX + key);
+        return raw ? { key: key, value: raw } : null;
+      } catch(e){ return null; }
     });
   }
 
+  function storageSet(key, value){
+    if (hasClaudeStorage()){
+      return window.storage.set(key, value, true).catch(function(){ return null; });
+    }
+    return Promise.resolve().then(function(){
+      try { localStorage.setItem(LS_PREFIX + key, value); return { key: key, value: value }; }
+      catch(e){ return null; }
+    });
+  }
+
+  // fire-and-forget POST to the Google Apps Script webhook, so the request
+  // also lands in the shared Google Sheet (used for the weekly/monthly
+  // email digest). Uses text/plain to avoid a CORS preflight request.
+  function pushToWebhook(text, isoDate){
+    if (!GAS_WEBHOOK_URL) return;
+    try {
+      fetch(GAS_WEBHOOK_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ date: isoDate, texte: text })
+      }).catch(function(){ /* silent — local log already saved */ });
+    } catch(e){ /* silent */ }
+  }
+
+  function logUnanswered(text){
+    var isoDate = new Date().toISOString();
+    readLog().then(function(list){
+      list.unshift({ text: text, date: isoDate });
+      if (list.length > 500) list = list.slice(0, 500);
+      storageSet(LOG_KEY, JSON.stringify(list)).then(renderHistoryTab);
+    });
+    pushToWebhook(text, isoDate);
+  }
+
   function readLog(){
-    return window.storage.get(LOG_KEY, true)
+    return storageGet(LOG_KEY)
       .then(function(res){
         if (!res || !res.value) return [];
         try { return JSON.parse(res.value); } catch(e){ return []; }
@@ -1196,7 +1245,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
 
   document.getElementById('clearHistBtn').addEventListener('click', function(){
     if (!confirm('Vider tout l\'historique des demandes sans réponse ?')) return;
-    window.storage.set(LOG_KEY, JSON.stringify([]), true).then(renderHistoryTab);
+    storageSet(LOG_KEY, JSON.stringify([])).then(renderHistoryTab);
   });
 
   // ---------- admin accordion ----------
