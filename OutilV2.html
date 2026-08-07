@@ -1043,6 +1043,9 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     resultBlock.innerHTML = '';
     resultBlock.appendChild(card);
 
+    // envoi automatique par courriel, sans action de l'employé
+    pushCompletedDiagnostic(buildSummary(opt), opt.code);
+
     document.getElementById('copyResultBtn').addEventListener('click', function(){
       var summary = buildSummary(opt);
       navigator.clipboard.writeText(summary).then(function(){
@@ -1120,7 +1123,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     renderKeywords(out.foundKeywords);
 
     if (out.results.length === 0){
-      setDiagDetected('Aucun diagnostic détecté — demande enregistrée pour révision (v2)', 'alert');
+      setDiagDetected('Aucun diagnostic détecté — demande enregistrée pour révision', 'alert');
       logUnanswered(text);
       return;
     }
@@ -1175,19 +1178,28 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     });
   }
 
-  // fire-and-forget POST to the Google Apps Script webhook, so the request
-  // also lands in the shared Google Sheet (used for the weekly/monthly
-  // email digest). Uses text/plain to avoid a CORS preflight request.
-  function pushToWebhook(text, isoDate){
+  // fire-and-forget POST to the Google Apps Script webhook.
+  // - type 'sans_reponse'       -> appended to the Sheet, emailed as a weekly/monthly digest
+  // - type 'diagnostic_complete' -> emailed immediately, one message per completed diagnostic
+  // Uses text/plain to avoid a CORS preflight request.
+  function postToGAS(payload){
     if (!GAS_WEBHOOK_URL) return;
     try {
       fetch(GAS_WEBHOOK_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ date: isoDate, texte: text })
+        body: JSON.stringify(payload)
       }).catch(function(){ /* silent — local log already saved */ });
     } catch(e){ /* silent */ }
+  }
+
+  function pushUnanswered(text, isoDate){
+    postToGAS({ type: 'sans_reponse', date: isoDate, texte: text });
+  }
+
+  function pushCompletedDiagnostic(summaryText, code){
+    postToGAS({ type: 'diagnostic_complete', date: new Date().toISOString(), texte: summaryText, code: code || '' });
   }
 
   function logUnanswered(text){
@@ -1197,7 +1209,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
       if (list.length > 500) list = list.slice(0, 500);
       storageSet(LOG_KEY, JSON.stringify(list)).then(renderHistoryTab);
     });
-    pushToWebhook(text, isoDate);
+    pushUnanswered(text, isoDate);
   }
 
   function readLog(){
