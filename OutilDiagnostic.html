@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>v6 Outil diagnostique — Office d'habitation de l'Outaouais</title>
+<title>v7 - Outil diagnostique — Office d'habitation de l'Outaouais</title>
 <style>
 :root{
   --oh-green:#527563;
@@ -650,6 +650,19 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     return d.toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' });
   }
 
+  // "Sem. courante" (this week) means due by the end of THIS work week
+  // (Friday) — not a flat +5 calendar days, which can overshoot into next week.
+  function fmtDueDateForDelai(delai){
+    if (delai.delai_code === 'Sem. courante'){
+      var d = new Date();
+      var dow = d.getDay(); // 0=dim ... 5=ven ... 6=sam
+      var daysToFriday = (5 - dow + 7) % 7;
+      d.setDate(d.getDate() + daysToFriday);
+      return d.toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+    return fmtDueDate(delai.jours);
+  }
+
   // the questionnaire's final code (Action_finale, e.g. "DÉB.TOIL.2") maps
   // directly and exactly to a "Requête" row in the Délais de réparation
   // sheet — this is the authoritative link, not a guess.
@@ -677,7 +690,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     var d = best;
     delaiBox.style.display = 'flex';
     delaiBox.style.borderLeftColor = d.couleur;
-    var dateLabel = d.jours === 0 ? 'aujourd\'hui' : 'd\'ici le ' + fmtDueDate(d.jours);
+    var dateLabel = d.jours === 0 ? 'aujourd\'hui' : 'd\'ici le ' + fmtDueDateForDelai(d);
     delaiBox.innerHTML =
       '<span class="dot" style="background:' + d.couleur + '"></span>' +
       '<span class="delai-text"><b>Délai (estimation) : ' + escapeHtml(d.label) + '</b>' +
@@ -952,7 +965,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     var html = '<div class="bdt-header">Bon de travail</div>';
 
     if (delai){
-      var dateLabel = delai.jours === 0 ? fmtDueDate(0) : fmtDueDate(delai.jours);
+      var dateLabel = fmtDueDateForDelai(delai);
       html += '<div class="bdt-chips">' +
         '<div class="bdt-chip"><label>Délai / priorité</label><b>' + escapeHtml(delai.label) + '</b></div>' +
         '<div class="bdt-chip"><label>Date limite</label><b>' + escapeHtml(dateLabel) + '</b></div>' +
@@ -1019,7 +1032,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     lines.push('Diagnostic : ' + (state.diag.code || state.diag.sujet));
     var dl = delaiForCode(opt.code);
     if (dl){
-      var dateLabel = dl.jours === 0 ? 'aujourd\'hui' : 'd\'ici le ' + fmtDueDate(dl.jours);
+      var dateLabel = dl.jours === 0 ? 'aujourd\'hui' : 'd\'ici le ' + fmtDueDateForDelai(dl);
       lines.push('Délai : ' + dl.label + ' (à réparer ' + dateLabel + ')');
       if (dl.requete_code) lines.push('Requête : ' + dl.requete_code + (dl.requete_description ? ' — ' + dl.requete_description : ''));
       if (dl.sous_categorie) lines.push('Sous-catégorie : ' + dl.sous_categorie);
