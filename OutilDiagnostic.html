@@ -243,6 +243,8 @@ textarea, .card textarea{
 .bdt-procedure{ margin:10px 0 0; padding-left:20px; }
 .bdt-procedure li{ margin-bottom:6px; }
 .bdt-procedure li:last-child{ margin-bottom:0; }
+.bdt-checklist{ margin:0 0 10px; padding-left:20px; opacity:.85; }
+.bdt-checklist li{ margin-bottom:3px; }
 .bdt-attention{
   background:#fff4e0; border:1px solid var(--oh-gold); color:#8a5a00; padding:12px 16px;
   font-size:13px; margin-top:12px; line-height:1.5;
@@ -1047,7 +1049,8 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
 
     if (opt.cmmt_locataire || delai){
       html += '<div class="block-label" style="margin-top:16px;">Informations au locataire</div>' +
-        '<div class="bdt-locataire">';
+        '<div class="bdt-locataire">' +
+        '<ul class="bdt-checklist"><li>Donner le numéro de BT au locataire</li><li>Indiquer le délai pour la réparation</li></ul>';
       if (opt.cmmt_locataire){
         html += '<div>' + escapeHtml(opt.cmmt_locataire) + '</div>';
       }
@@ -1112,6 +1115,10 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     if (state.infoText) lines.push('Info supplémentaire : ' + state.infoText);
     if (opt.code) lines.push('Code BT : ' + opt.code);
     if (opt.cmmt_employe) lines.push('Note BT : ' + opt.cmmt_employe);
+    if (opt.cmmt_locataire || dl){
+      lines.push('Donner le numéro de BT au locataire');
+      lines.push('Indiquer le délai pour la réparation');
+    }
     if (opt.cmmt_locataire) lines.push('Message locataire : ' + opt.cmmt_locataire);
     var procLines = buildLocataireProcedure(dl, state.extraAnswers.permission);
     if (procLines){
