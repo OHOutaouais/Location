@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>v1 Outil diagnostique — Office d'habitation de l'Outaouais</title>
+<title>Outil diagnostique — Office d'habitation de l'Outaouais</title>
 <style>
 :root{
   --oh-green:#527563;
@@ -195,6 +195,9 @@ textarea, .card textarea{
 
 .row{ display:grid; grid-template-columns:1fr 18px auto; gap:12px; align-items:center; margin-top:10px; }
 .row.old{ opacity:.65; }
+.row.old.editable{ cursor:pointer; transition:opacity .12s, transform .12s; }
+.row.old.editable:hover{ opacity:1; transform:translateX(2px); }
+.row.old.editable:hover .oldans{ border-color:var(--oh-green); }
 .question{
   background:#fafafa; border:1px solid #ddd; border-left:4px solid var(--oh-green);
   padding:15px; font-size:16px; color:#242424;
@@ -776,8 +779,8 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     stepCounter.textContent = 'Étape ' + (state.answered.length + 1) + '/' + state.totalSteps;
 
     rowsContainer.innerHTML = '';
-    state.answered.forEach(function(a){
-      rowsContainer.appendChild(buildOldRow(a.question, a.answer));
+    state.answered.forEach(function(a, idx){
+      rowsContainer.appendChild(buildOldRow(a.question, a.answer, function(){ rewindDiagnostic(idx); }));
     });
 
     if (!step){
@@ -808,7 +811,10 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     rowsContainer.appendChild(row);
   }
 
-  function buildOldRow(question, answer){
+  // onClick is optional — when provided, the row becomes clickable so the
+  // employee can redo a question they misclicked (this also clears
+  // everything answered afterwards, same as changing an answer in Excel)
+  function buildOldRow(question, answer, onClick){
     var row = document.createElement('div');
     row.className = 'row old';
     var q = document.createElement('div');
@@ -823,7 +829,38 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     row.appendChild(q);
     row.appendChild(arrow);
     row.appendChild(ans);
+    if (onClick){
+      row.classList.add('editable');
+      row.title = 'Cliquer pour refaire cette question';
+      row.addEventListener('click', onClick);
+    }
     return row;
+  }
+
+  // truncate the diagnostic-tree answers back to `idx` and re-ask that
+  // question — discards anything answered after it (extra questions, result)
+  function rewindDiagnostic(idx){
+    var entry = state.answered[idx];
+    state.answered = state.answered.slice(0, idx);
+    state.currentStepId = entry.stepId;
+    state.phase = 'diagnostic';
+    state.extraIndex = 0;
+    state.extraAnswers = {};
+    state.pendingOpt = null;
+    resultBlock.innerHTML = '';
+    renderProgress();
+    showStep(state.currentStepId);
+  }
+
+  // same idea but for the two generic "Accès au logement" questions
+  function rewindExtra(idx){
+    state.extraIndex = idx;
+    var keysToKeep = EXTRA_QUESTIONS.slice(0, idx).map(function(q){ return q.id; });
+    var kept = {};
+    keysToKeep.forEach(function(k){ if (state.extraAnswers[k] !== undefined) kept[k] = state.extraAnswers[k]; });
+    state.extraAnswers = kept;
+    resultBlock.innerHTML = '';
+    showExtraStep();
   }
 
   function handleAnswer(ans){
@@ -834,7 +871,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     var opt = step.options[ans];
     if (!opt) return;
 
-    state.answered.push({ question: step.question, answer: ans });
+    state.answered.push({ question: step.question, answer: ans, stepId: state.currentStepId });
 
     if (opt.fin){
       startExtraQuestions(opt);
@@ -857,8 +894,8 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
 
   function showExtraStep(){
     rowsContainer.innerHTML = '';
-    state.answered.forEach(function(a){
-      rowsContainer.appendChild(buildOldRow(a.question, a.answer));
+    state.answered.forEach(function(a, idx){
+      rowsContainer.appendChild(buildOldRow(a.question, a.answer, function(){ rewindDiagnostic(idx); }));
     });
 
     var label = document.createElement('div');
@@ -870,7 +907,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
 
     EXTRA_QUESTIONS.forEach(function(eq, idx){
       if (idx < state.extraIndex){
-        rowsContainer.appendChild(buildOldRow(eq.question, state.extraAnswers[eq.id]));
+        rowsContainer.appendChild(buildOldRow(eq.question, state.extraAnswers[eq.id], function(){ rewindExtra(idx); }));
       }
     });
 
@@ -944,8 +981,8 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
   function finishWithResult(opt){
     renderProgress();
     rowsContainer.innerHTML = '';
-    state.answered.forEach(function(a){
-      rowsContainer.appendChild(buildOldRow(a.question, a.answer));
+    state.answered.forEach(function(a, idx){
+      rowsContainer.appendChild(buildOldRow(a.question, a.answer, function(){ rewindDiagnostic(idx); }));
     });
     var accessLabel = document.createElement('div');
     accessLabel.className = 'qtitle';
@@ -953,8 +990,8 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     accessLabel.style.marginTop = '14px';
     accessLabel.textContent = 'Accès au logement';
     rowsContainer.appendChild(accessLabel);
-    EXTRA_QUESTIONS.forEach(function(eq){
-      rowsContainer.appendChild(buildOldRow(eq.question, state.extraAnswers[eq.id]));
+    EXTRA_QUESTIONS.forEach(function(eq, idx){
+      rowsContainer.appendChild(buildOldRow(eq.question, state.extraAnswers[eq.id], function(){ rewindExtra(idx); }));
     });
 
     var diag = state.diag;
