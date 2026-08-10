@@ -245,6 +245,7 @@ textarea, .card textarea{
 .bdt-procedure li:last-child{ margin-bottom:0; }
 .bdt-checklist{ margin:0 0 10px; padding-left:20px; opacity:.85; }
 .bdt-checklist li{ margin-bottom:3px; }
+.bdt-procedure-simple{ margin-top:10px; }
 .bdt-attention{
   background:#fff4e0; border:1px solid var(--oh-gold); color:#8a5a00; padding:12px 16px;
   font-size:13px; margin-top:12px; line-height:1.5;
@@ -988,6 +989,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
   // whether they gave permission to enter in their absence
   function buildLocataireProcedure(delai, permission){
     if (!delai) return null;
+    if (delai.delai_code === 'Jr courant' || delai.delai_code === 'Sem. courante') return null;
     var lines = [];
     lines.push('Le délai pour votre réparation est de ' + delai.jours + ' jours.');
     lines.push('Vous recevrez un appel le vendredi de la semaine AVANT la réparation. On vous dira le jour exact où le préposé ira chez vous.');
@@ -1056,6 +1058,8 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
       var procLines = buildLocataireProcedure(delai, state.extraAnswers.permission);
       if (procLines){
         html += '<ol class="bdt-procedure">' + procLines.map(function(l){ return '<li>' + escapeHtml(l) + '</li>'; }).join('') + '</ol>';
+      } else if (delai && (delai.delai_code === 'Jr courant' || delai.delai_code === 'Sem. courante')){
+        html += '<div class="bdt-procedure-simple">Un technicien va passer pour évaluer la situation et corriger si requis.</div>';
       }
       html += '</div>';
     }
@@ -1123,6 +1127,8 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     if (procLines){
       lines.push('Procédure locataire :');
       procLines.forEach(function(l){ lines.push('  - ' + l); });
+    } else if (dl && (dl.delai_code === 'Jr courant' || dl.delai_code === 'Sem. courante')){
+      lines.push('Un technicien va passer pour évaluer la situation et corriger si requis.');
     }
     if (state.answered.length){
       lines.push('');
