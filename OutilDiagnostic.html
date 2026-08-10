@@ -1050,9 +1050,13 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
 
     if (opt.cmmt_locataire || delai){
       html += '<div class="block-label" style="margin-top:16px;">Informations au locataire</div>' +
-        '<div class="bdt-locataire">' +
-        '<div class="bdt-checklist">Donner le numéro de BT au locataire</div>' +
-        '<div class="bdt-checklist">Indiquer le délai pour la réparation</div>';
+        '<div class="bdt-locataire">';
+      // the BT/délai checklist only makes sense when a repair is actually
+      // being dispatched — not for "Fin de l'appel" (no requête found)
+      if (delai){
+        html += '<div class="bdt-checklist">Donner le numéro de BT au locataire</div>' +
+          '<div class="bdt-checklist">Indiquer le délai pour la réparation</div>';
+      }
       if (opt.cmmt_locataire){
         html += '<div>' + escapeHtml(opt.cmmt_locataire) + '</div>';
       }
@@ -1063,6 +1067,11 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
         html += '<div class="bdt-procedure-simple">Un technicien va passer pour évaluer la situation et corriger si requis.</div>';
       }
       html += '</div>';
+    }
+
+    if (!delai && opt.code){
+      html += '<div class="block-label" style="margin-top:16px;">Note</div>' +
+        '<div class="block-text">Aucune requête de réparation associée à ce résultat (« ' + escapeHtml(opt.code) + ' ») — aucun bon de travail à créer.</div>';
     }
 
     if (diag.responsabilite && normalize(diag.responsabilite) === 'oui'){
@@ -1119,7 +1128,7 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
     if (state.infoText) lines.push('Info supplémentaire : ' + state.infoText);
     if (opt.code) lines.push('Code BT : ' + opt.code);
     if (opt.cmmt_employe) lines.push('Note BT : ' + opt.cmmt_employe);
-    if (opt.cmmt_locataire || dl){
+    if (dl){
       lines.push('Donner le numéro de BT au locataire');
       lines.push('Indiquer le délai pour la réparation');
     }
