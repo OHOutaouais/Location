@@ -988,7 +988,6 @@ window.DIAG_DATA = {"diagnostics": [{"id": "D001", "sujet": "La toilette est bou
   // whether they gave permission to enter in their absence
   function buildLocataireProcedure(delai, permission){
     if (!delai) return null;
-    if (delai.delai_code === 'Jr courant' || delai.delai_code === 'Sem. courante') return null;
     var lines = [];
     lines.push('Le délai pour votre réparation est de ' + delai.jours + ' jours.');
     lines.push('Vous recevrez un appel le vendredi de la semaine AVANT la réparation. On vous dira le jour exact où le préposé ira chez vous.');
