@@ -8,11 +8,11 @@ Adresses (numéros de rue) :
 • Du Conservatoire (55, 59, 63, 67, 71, 75, 79, 83, 87, 91, 95, 99, 103, 107)  
 • Liverpool (151, 155, 159, 163, 167, 171, 175, 179, 183, 187, 191, 195, 199, 203, 207) 
 • Mance (20) 
-• Mance (maisonnettes)
+• Mance (maisonnettes) 
 • Sacré-Cœur (40, 50) 
  
-Agente de location :         Madame Karine Bertrand 
-Courriel :              Bertrand.k@ohoutaouais.ca 
+Agente de location :         Vacant 
+Courriel :              Nouri.m@ohoutaouais.ca 
 Téléphone :              819 568-0033, poste 535 
  
 Adresses (numéros de rue) :  
@@ -40,7 +40,7 @@ Adresses (numéros de rue) :
 • Beausoleil (96)  
 • Claire (20, 26) 
 • De la Baie (70, 75, 115)  
-• De l’Hôpital (375, 383)  
+• De l'Hôpital (375, 383)  
 • Des Fondateurs (10)  
 • Des Sables (104, 114) 
 • Du Carrefour (807) 
@@ -49,7 +49,6 @@ Adresses (numéros de rue) :
 • Fortin (60) 
 • F.X.-Bouvier (46, 56, 66) 
 • Gréber (452) 
- 
 • Guertin (25) 
 • Hôtel-de-Ville (280) 
 • Jeannine-Grégoire-Ross (131, 135, 147, 151, 155, 167, 171, 183, 187) 
@@ -69,7 +68,7 @@ Adresses (numéros de rue) :
 • Raphaël (40) 
 • Rodolphe-Pelletier (180 à 210) 
 • Saint-Henri (230)  
-• Saint-René Ouest (898, 902, 906) 
+• Saint-René (898, 902, 906) 
 • Sully (37) 
 • Transcanadienne (1346)  
 • Williams (610, 614) 
@@ -84,11 +83,10 @@ Adresses (numéros de rue) :
 • Gouin (463, 471, 479, 489) 
 • Graveline (478, 488) 
 • La Vérendrye (365) 
-  
 • Jean-Louis-Champagne (100, 110, 120) 
 • Maclaren (830, 832, 834, 836) 
 • Notre-Dame (240) 
-• O’Farrell (38, 42, 51, 55, 59) 
+• O'Farrell (38, 42, 51, 55, 59) 
 • P.-Labine (193, 197, 201, 205) 
 • Saint-Denis (94) 
 • Saint-Pierre (23) 
@@ -167,13 +165,14 @@ blocs.forEach(bloc => {
     }
   });
 });
+
 function getCode(agent) {
   switch (agent) {
     case "Molka Nouri":
       return "molnou4";
 
-    case "Karine Bertrand":
-      return "karber19";
+    case "Vacant":
+      return "";
 
     case "Mélanie Lafontaine":
       return "mellaf";
