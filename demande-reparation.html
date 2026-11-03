@@ -99,13 +99,18 @@ textarea.f{min-height:70px;resize:vertical}
 .success .ref{display:inline-block;font-family:Consolas,Menlo,monospace;font-size:20px;font-weight:bold;border:1px solid #ddd;background:#fafafa;padding:8px 18px;margin:10px 0 14px;letter-spacing:.06em}
 .success p{color:#555;line-height:1.5;margin:6px 0}
 #step2.open{border-top:4px solid var(--oh-green)}
-.recap{display:flex;align-items:center;gap:16px;background:#f4f7f5;border-left:5px solid var(--oh-green);padding:14px 16px;margin-bottom:6px}
-.recap div{flex:1;min-width:0}
-.recap span{display:block;font-size:11px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;color:#53667d}
-.recap b{display:block;font-size:16px;margin-top:4px}
-.recap small{display:block;color:#666;margin-top:3px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.recap button{background:#fff;border:1px solid var(--oh-green);color:var(--oh-green);font-weight:bold;padding:9px 14px;cursor:pointer;font-family:inherit}
-.recap button:hover{background:var(--oh-green);color:#fff}
+[hidden]{display:none!important}
+.gate{display:flex;align-items:center;gap:14px;padding:16px 18px;border:2px dashed #cfd6d2;background:#fafafa;margin-bottom:14px;transition:all .25s}
+.gate .ico{width:38px;height:38px;border-radius:50%;background:#e4e8e6;color:#8a948f;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;flex-shrink:0;transition:all .25s}
+.gate b{display:block;font-size:15px;color:#555}
+.gate small{display:block;font-size:13px;color:#888;margin-top:3px}
+.gate.ready{border:2px solid var(--oh-green);background:#f4f7f5}
+.gate.ready .ico{background:var(--oh-green);color:#fff}
+.gate.ready b{color:var(--oh-green)}
+#continueBtn[disabled]{background:#c9cfcc;cursor:not-allowed;opacity:1}
+#continueBtn.go{animation:pulse 1.6s ease-in-out 3}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(82,117,99,.45)}50%{box-shadow:0 0 0 10px rgba(82,117,99,0)}}
+.edit-link{background:none;border:0;color:var(--oh-green);font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;padding:0;margin:0 0 10px;text-decoration:underline}
 .zf-wrap{position:relative;margin:0 -22px -22px}
 .zf-wrap iframe{display:block;width:100%;height:900px;border:0;transition:height .2s}
 .zf-loading{position:absolute;top:30px;left:0;right:0;text-align:center;color:#8a8a8a;font-size:14px}
@@ -162,13 +167,13 @@ footer span{color:#666}
     <!-- 2. Coordonnées : formulaire Zoho (les renseignements personnels ne passent jamais par cette page) -->
     <section class="card" id="step2">
       <h2 class="step-h"><i>2</i>Vos coordonnées</h2>
-      <p id="step2Hint" class="empty" style="font-size:14px;margin:0 0 14px">Décrivez d'abord votre problème à l'étape 1, puis cliquez sur « Continuer ».</p>
-      <button type="button" class="submit" id="continueBtn" style="margin-top:0">Continuer vers mes coordonnées →</button>
-      <div class="form-error" id="formError"></div>
-      <div class="recap" id="recap" hidden>
-        <div><span>Votre demande</span><b id="recapChoix"></b><small id="recapDesc"></small></div>
-        <button type="button" id="editBtn">Modifier</button>
+      <div class="gate" id="gate">
+        <div class="ico" id="gateIco">1</div>
+        <div><b id="gateTitle">Terminez d'abord l'étape 1</b><small id="gateSub">Décrivez votre problème, cliquez sur « Analyser » et répondez aux questions.</small></div>
       </div>
+      <button type="button" class="submit" id="continueBtn" style="margin-top:0" disabled>Continuer vers mes coordonnées →</button>
+      <div class="form-error" id="formError"></div>
+      <button type="button" class="edit-link" id="editBtn" hidden>← Modifier la description de mon problème</button>
       <div class="zf-wrap" id="zfWrap" hidden>
         <div class="zf-loading" id="zfLoading">Chargement du formulaire…</div>
         <iframe id="zohoFrame" title="Vos coordonnées" referrerpolicy="no-referrer"></iframe>
@@ -309,7 +314,7 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
   var stepCounter = $('stepCounter'), progressBoxes = $('progressBoxes');
 
   descInput.addEventListener('input', function(){ $('descCount').textContent = descInput.value.length + ' / 300'; });
-  descInput.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); runAnalysis(); } });
+  descInput.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); runAnalysis(); updateGate(); } });
   $('analyzeBtn').addEventListener('click', runAnalysis);
 
   var state = { diag: null, choice: null, keywords: [], stepId: null, answered: [], total: 1, outcome: null };
@@ -329,6 +334,7 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
       return;
     }
     var r = search(text);
+    state.analyzed = true;
     state.keywords = Array.from(r.found);
 
     if (state.keywords.length){
@@ -468,6 +474,29 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
     return CONFIG.ZOHO_URL + (CONFIG.ZOHO_URL.indexOf('?') < 0 ? '?' : '&') + q;
   }
 
+  var wasReady = false;
+  function updateGate(){
+    var desc = descInput.value.trim().length >= 3;
+    var ready = desc && state.choice !== null && (!state.diag || !!state.outcome);
+    var noMatch = desc && state.analyzed && state.choice === null && !keywordsBox.querySelector('.choice');
+    if (noMatch) ready = true;
+    $('gate').classList.toggle('ready', ready);
+    $('gateIco').textContent = ready ? '✓' : '1';
+    $('gateTitle').textContent = ready ? 'Étape 1 terminée' : 'Terminez d\'abord l\'étape 1';
+    $('gateSub').textContent = ready
+      ? 'Il ne reste qu\'à indiquer vos coordonnées. Cliquez sur le bouton vert.'
+      : (state.diag && !state.outcome ? 'Répondez aux questions ci-dessus.'
+        : (state.analyzed ? 'Choisissez ce qui correspond le mieux à votre problème.'
+          : 'Décrivez votre problème, cliquez sur « Analyser » et répondez aux questions.'));
+    var btn = $('continueBtn');
+    btn.disabled = !ready;
+    if (ready && !wasReady){ btn.classList.remove('go'); void btn.offsetWidth; btn.classList.add('go'); }
+    wasReady = ready;
+  }
+  document.addEventListener('click', function(){ setTimeout(updateGate, 0); });
+  updateGate();
+  descInput.addEventListener('input', function(){ state.analyzed = false; setTimeout(updateGate, 0); });
+
   function lockStep1(lock){
     descInput.readOnly = lock;
     $('analyzeBtn').disabled = lock;
@@ -487,14 +516,12 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
       $('formError').style.display = 'block';
       return;
     }
-    $('recapChoix').textContent = state.diag ? cap(state.diag.sujet) : 'Problème décrit';
-    $('recapDesc').textContent = '« ' + descInput.value.trim() + ' »';
     var f = $('zohoFrame');
     $('zfLoading').hidden = false;
     f.onload = function(){ $('zfLoading').hidden = true; };
     f.src = zohoUrl() + '&zf_rszfm=1';   // demande à Zoho d'envoyer la hauteur du formulaire
-    $('recap').hidden = false; $('zfWrap').hidden = false;
-    $('continueBtn').hidden = true; $('step2Hint').hidden = true;
+    $('zfWrap').hidden = false; $('editBtn').hidden = false;
+    $('continueBtn').hidden = true; $('gate').hidden = true;
     $('step2').classList.add('open');
     lockStep1(true);
     setTimeout(function(){ $('step2').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
@@ -502,9 +529,9 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
 
   $('editBtn').addEventListener('click', function(){
     lockStep1(false);
-    $('zfWrap').hidden = true; $('recap').hidden = true;
+    $('zfWrap').hidden = true; $('editBtn').hidden = true;
     $('zohoFrame').src = 'about:blank';
-    $('continueBtn').hidden = false; $('step2Hint').hidden = false;
+    $('continueBtn').hidden = false; $('gate').hidden = false;
     $('step2').classList.remove('open');
     $('step1').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
