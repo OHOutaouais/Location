@@ -305,6 +305,10 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
     return best;
   }
 
+  // index : étape -> questionnaire (certaines questions renvoient vers le questionnaire d'un autre problème)
+  var STEP_TREE = {};
+  Object.keys(PROCESSES).forEach(function(id){ Object.keys(PROCESSES[id].steps).forEach(function(sid){ STEP_TREE[sid] = id; }); });
+
   function cap(s){ s = (s||'').trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
 
   // ---------- éléments ----------
@@ -373,6 +377,7 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
 
   function startDiagnostic(diag){
     state.diag = diag;
+    state.treeId = diag.id;
     var tree = PROCESSES[diag.id];
     qBlock.hidden = false;
     if (!tree){
@@ -386,7 +391,7 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
   }
 
   function render(){
-    var tree = PROCESSES[state.diag.id];
+    var tree = PROCESSES[state.treeId];
     var step = tree.steps[state.stepId];
     rows.innerHTML = ''; resultBlock.innerHTML = '';
     state.answered.forEach(function(a, idx){ rows.appendChild(oldRow(a, idx)); });
@@ -422,19 +427,28 @@ window.DIAG_DATA = {"diagnostics":[{"id":"D001","sujet":"La toilette est bouché
     row.appendChild(q); row.appendChild(o);
     row.addEventListener('click', function(){
       state.answered = state.answered.slice(0, idx);
-      state.stepId = a.stepId; state.outcome = null;
+      state.stepId = a.stepId; state.treeId = a.treeId; state.outcome = null;
       render();
     });
     return row;
   }
 
   function answer(a){
-    var tree = PROCESSES[state.diag.id];
+    var tree = PROCESSES[state.treeId];
     var step = tree.steps[state.stepId];
     var opt = step.options[a];
-    state.answered.push({ stepId: state.stepId, question: step.question, answer: a });
+    state.answered.push({ stepId: state.stepId, treeId: state.treeId, question: step.question, answer: a });
+    var seen = state.answered.some(function(x){ return x.stepId === opt.next; });
     if (opt.fin || !opt.next){ state.outcome = opt; }
-    else { state.stepId = opt.next; }
+    else if (seen){ state.outcome = { fin: true, code: '' }; }   // le fichier Excel revient à une question déjà posée : on termine
+    else if (tree.steps[opt.next]){ state.stepId = opt.next; }
+    else if (STEP_TREE[opt.next]){
+      // la question suivante appartient au questionnaire d'un autre problème : on continue là-bas
+      state.treeId = STEP_TREE[opt.next];
+      state.stepId = opt.next;
+      state.total = Math.max(state.total, state.answered.length + treeDepth(state.treeId, opt.next));
+    }
+    else { state.outcome = opt; }   // étape absente du fichier Excel : on termine proprement
     render();
   }
 
